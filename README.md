@@ -30,7 +30,15 @@ Wikipedia describes them as
 - Do not try to force them; bad things are supposed to happen, if done so. Keep in mind that design patterns are solutions **to** problems, not solutions **finding** problems; so don't overthink.
 - If used in a correct place in a correct manner, they can prove to be a savior; or else they can result in a horrible mess of a code.
 
+> Original Author:
+>
 > Also note that the code samples below are in PHP-7, however this shouldn't stop you because the concepts are same anyways. Plus the **support for other languages is underway**.
+>
+> Me:
+>
+> I change the PHP-7 implementation to C++ implementation.  If there are any better implementation of these pattern, please inform me!
+>
+> Also for demostrating these pattern, I will ignore the problem of memory leak without deleting the object that I new. 
 
 Types of Design Patterns
 -----------------
@@ -69,51 +77,56 @@ Wikipedia says
 **Programmatic Example**
 
 First of all we have a door interface and the implementation
-```php
-interface Door
+
+```C++
+class Door
 {
-    public function getWidth(): float;
-    public function getHeight(): float;
-}
-
-class WoodenDoor implements Door
+public:
+    virtual float getWidth() = 0;
+    virtual float getHeight() = 0;
+};
+class WoodenDoor: public Door
 {
-    protected $width;
-    protected $height;
-
-    public function __construct(float $width, float $height)
+private:
+	float width;
+	float height;
+public:
+	WoodenDoor(float width, float height)
+    	:width(width),height(height)
     {
-        $this->width = $width;
-        $this->height = $height;
     }
-
-    public function getWidth(): float
+	virtual float getWidth()
     {
-        return $this->width;
+    	return width;
     }
-
-    public function getHeight(): float
+    virtual float getHeight()
     {
-        return $this->height;
+    	return height;
     }
-}
+};
 ```
+
 Then we have our door factory that makes the door and returns it
-```php
+
+```c++
 class DoorFactory
 {
-    public static function makeDoor($width, $height): Door
+public:
+    static Door* makeDoor(float width, float height)
     {
-        return new WoodenDoor($width, $height);
+        return new WoodenDoor(width, height);
     }
-}
+};
 ```
+
 And then it can be used as
-```php
-$door = DoorFactory::makeDoor(100, 200);
-echo 'Width: ' . $door->getWidth();
-echo 'Height: ' . $door->getHeight();
+
+```c++
+Door* door = DoorFactory::makeDoor(100,200);
+std::cout<< door->getWidth() << std::endl;
+std::cout<< door->getHeight() << std::endl;
 ```
+
 
 **When to Use?**
 
@@ -135,72 +148,100 @@ Wikipedia says
 
 Taking our hiring manager example above. First of all we have an interviewer interface and some implementations for it
 
-```php
-interface Interviewer
+```c++
+class Interviewer
 {
-    public function askQuestions();
-}
+public:
+    virtual void askQuetions() = 0;
+};
 
-class Developer implements Interviewer
+class Developer: public Interviewer
 {
-    public function askQuestions()
+public:
+	virtual void askQuestions()
     {
-        echo 'Asking about design patterns!';
+    	std::cout<<"Asking about design patterns!" << std::endl;
     }
-}
+};
 
-class CommunityExecutive implements Interviewer
+class CommunityExecutive: public Interviewer
 {
-    public function askQuestions()
+public:
+	virtual void askQuestions()
     {
-        echo 'Asking about community building';
+    	std::cout << "Asking about community building" << std::endl;
     }
-}
+};
 ```
+
+
 
 Now let us create our `HiringManager`
 
-```php
-abstract class HiringManager
+```c++
+class HiringManager
 {
-
-    // Factory method
-    abstract protected function makeInterviewer(): Interviewer;
-
-    public function takeInterview()
+public:
+    virtual Interviewer* makeInterviewer() = 0;
+    void takeInterview()
     {
-        $interviewer = $this->makeInterviewer();
-        $interviewer->askQuestions();
+        Interviewer* interviewer = makeInterviewer();
+        interviewer->askQuestions();
     }
-}
-
+};
 ```
+
+
+
 Now any child can extend it and provide the required interviewer
-```php
-class DevelopmentManager extends HiringManager
-{
-    protected function makeInterviewer(): Interviewer
-    {
-        return new Developer();
-    }
-}
 
-class MarketingManager extends HiringManager
+```c++
+class DevelopmentManager: public HiringManager
 {
-    protected function makeInterviewer(): Interviewer
+public:
+	virtual Interviewer* makeInterviewer()
     {
-        return new CommunityExecutive();
+    	return new Developer();
     }
-}
+};
+
+class MarketingManager: public HiringManager
+{
+public:
+	virtual Interviewer* makeInterviewer()
+    {
+    	return new CommunityExecutive();
+    }
+};
 ```
+
 and then it can be used as
 
-```php
-$devManager = new DevelopmentManager();
-$devManager->takeInterview(); // Output: Asking about design patterns
+```c++
+HiringManager* devManager = new DevelopmentManager();
+devManager->takeInterview();
 
-$marketingManager = new MarketingManager();
-$marketingManager->takeInterview(); // Output: Asking about community building.
+HiringManager* marketingManager = new MarketingManager();
+marketingManager->takeInterview();
+```
+
+or it can be used by a function like the following
+
+```c++
+int getManager(std::string s, HiringManager** pHiringManager)
+{
+    if(s=="dev")
+    {
+        *pHiringManager = new DevelopmentManager();
+        return 0;
+    }
+    else if(s=="marketing")
+    {
+        *pHIringManager = new MarketingManager();
+        return 0;
+    }
+    return -1;
+}
 ```
 
 **When to use?**
@@ -223,108 +264,119 @@ Wikipedia says
 
 Translating the door example above. First of all we have our `Door` interface and some implementation for it
 
-```php
-interface Door
+```c++
+class Door
 {
-    public function getDescription();
-}
+public:
+    virtual void getDescription() = 0;
+};
 
-class WoodenDoor implements Door
+class WoodenDoor: public Door
 {
-    public function getDescription()
+public: 
+	virtual void getDescription()
     {
-        echo 'I am a wooden door';
+    	std::cout << "I am a wooden door" << std::endl;
     }
-}
+};
 
-class IronDoor implements Door
+class IronDoor: public Door
 {
-    public function getDescription()
+public:
+	virtual void getDescription()
     {
-        echo 'I am an iron door';
+    	std::cout << "I am a iron door" << std::endl;
     }
-}
+};
 ```
+
+
 Then we have some fitting experts for each door type
 
-```php
-interface DoorFittingExpert
+```c++
+class DoorFittingExpert
 {
-    public function getDescription();
-}
+public:
+	virtual void getDescription() = 0;
+};
 
-class Welder implements DoorFittingExpert
+class Welder: public DoorFittingExpert
 {
-    public function getDescription()
+public:
+	virtual void getDescription()
     {
-        echo 'I can only fit iron doors';
+    	std::cout<< "I can only fit iron doors" << std::endl;
     }
-}
+};
 
-class Carpenter implements DoorFittingExpert
+class Carpenter: public DoorFittingExpert
 {
-    public function getDescription()
+public:
+	virtual void getDescription()
     {
-        echo 'I can only fit wooden doors';
+    	std::cout << "I can only fit wooden doors" << std::endl;
     }
-}
+};
 ```
 
 Now we have our abstract factory that would let us make family of related objects i.e. wooden door factory would create a wooden door and wooden door fitting expert and iron door factory would create an iron door and iron door fitting expert
-```php
-interface DoorFactory
+
+```c++
+class DoorFactory
 {
-    public function makeDoor(): Door;
-    public function makeFittingExpert(): DoorFittingExpert;
-}
+public:
+    virtual Door* makeDoor() = 0;
+ 	virtual DoorFittingExpert* makeFittingExpert() = 0;
+};
 
-// Wooden factory to return carpenter and wooden door
-class WoodenDoorFactory implements DoorFactory
+class WoodenDoorFactory: DoorFactory
 {
-    public function makeDoor(): Door
+public:
+	Door* makeDoor()
     {
-        return new WoodenDoor();
+    	return new WoodenDoor();
     }
-
-    public function makeFittingExpert(): DoorFittingExpert
+    DoorFittingExpert* makeFittingExpert()
     {
-        return new Carpenter();
+    	return new Carpenter();
     }
-}
+};
 
-// Iron door factory to get iron door and the relevant fitting expert
-class IronDoorFactory implements DoorFactory
+class IronDoorFactory: DoorFactory
 {
-    public function makeDoor(): Door
+public:
+	Door* makeDoor()
     {
-        return new IronDoor();
+    	return new IronDoor();
     }
-
-    public function makeFittingExpert(): DoorFittingExpert
+    DoorFittingExpert* makeFittingExpert()
     {
-        return new Welder();
+    	return new Welder();
     }
-}
+};
 ```
+
 And then it can be used as
-```php
-$woodenFactory = new WoodenDoorFactory();
 
-$door = $woodenFactory->makeDoor();
-$expert = $woodenFactory->makeFittingExpert();
+```c++
+DoorFactory* woodenFactory = new WoodenDoorFactory();
 
-$door->getDescription();  // Output: I am a wooden door
-$expert->getDescription(); // Output: I can only fit wooden doors
+Door* door;
+DoorFittingExpert* expert;
+door = woodenFactory->makeDoor();  
+expert = woodenFactory->makeFittingExpert();
+door->getDescription(); // Output: I am a wooden door
+expert->getDescription(); // Output: I can only fit wooden doors
 
-// Same for Iron Factory
-$ironFactory = new IronDoorFactory();
+DoorFactory* ironFactory = new IronDoorFactory();
+door = ironFactory->makeDoor();
+expert = ironFactory->makeFittingExpert();
+door->getDescription(); // Output: I am an iron door
+expert->getDescription(); // Output: I can only fit iron doors
 
-$door = $ironFactory->makeDoor();
-$expert = $ironFactory->makeFittingExpert();
-
-$door->getDescription();  // Output: I am an iron door
-$expert->getDescription(); // Output: I can only fit iron doors
 ```
+
+
 
 As you can see the wooden door factory has encapsulated the `carpenter` and the `wooden door` also iron door factory has encapsulated the `iron door` and `welder`. And thus it had helped us make sure that for each of the created door, we do not get a wrong fitting expert.   
 
@@ -343,11 +395,12 @@ In plain words
 Wikipedia says
 > The builder pattern is an object creation software design pattern with the intentions of finding a solution to the telescoping constructor anti-pattern.
 
-Having said that let me add a bit about what telescoping constructor anti-pattern is. At one point or the other we have all seen a constructor like below:
+Having said that let me add a bit about what telescoping constructor anti-pattern is. At one point or the other we have all seen a constructor like below
 
-```php
-public function __construct($size, $cheese = true, $pepperoni = true, $tomato = false, $lettuce = true)
+```c++
+someClass::constructor(size_t size, bool cheese = true, bool pepperoni = true, bool tomato = false, bool lettuce = true)
 {
+    
 }
 ```
 
@@ -357,79 +410,81 @@ As you can see; the number of constructor parameters can quickly get out of hand
 
 The sane alternative is to use the builder pattern. First of all we have our burger that we want to make
 
-```php
+```c++
 class Burger
 {
-    protected $size;
-
-    protected $cheese = false;
-    protected $pepperoni = false;
-    protected $lettuce = false;
-    protected $tomato = false;
-
-    public function __construct(BurgerBuilder $builder)
+private:
+    size_t size;
+    bool cheese = false;
+    bool pepperoni = false;
+    bool lettuce = false;
+    bool tomato = false;
+    
+public:
+    Burger(const BurgerBuilder& builder)
     {
-        $this->size = $builder->size;
-        $this->cheese = $builder->cheese;
-        $this->pepperoni = $builder->pepperoni;
-        $this->lettuce = $builder->lettuce;
-        $this->tomato = $builder->tomato;
+        this->size = builder.size;
+        this->cheese = builder.cheese;
+        this->pepperoni = builder.pepperoni;
+        this->lettuce = builder.lettuce;
+        this->tomato = builder.tomato.
     }
 }
 ```
+
+
 
 And then we have the builder
 
-```php
+```c++
 class BurgerBuilder
 {
-    public $size;
-
-    public $cheese = false;
-    public $pepperoni = false;
-    public $lettuce = false;
-    public $tomato = false;
-
-    public function __construct(int $size)
+private:
+    size_t size;
+    bool cheese = false;
+    bool pepperoni = false;
+    bool lettuce = false;
+    bool tomato = false;
+public:
+    BurgerBuilder(size_t size)
+        :size(size)
     {
-        $this->size = $size;
+            
+    }
+    BurgerBuilder& addPepperoni()
+    {
+        this->pepperoni = true;
+        return *this;
+    }
+    BurgerBuilder& addLettuce()
+    {
+        this->lettuce = true;
+        return *this;
+    }
+        
+    BurgerBuilder& addCheese()
+    {
+        this->cheese = true;
+        return *this;
     }
 
-    public function addPepperoni()
+    BurgerBuilder& addTomato()
     {
-        $this->pepperoni = true;
-        return $this;
+        this->tomato = true;
+        return *this;
     }
-
-    public function addLettuce()
+    Burger* build()
     {
-        $this->lettuce = true;
-        return $this;
-    }
-
-    public function addCheese()
-    {
-        $this->cheese = true;
-        return $this;
-    }
-
-    public function addTomato()
-    {
-        $this->tomato = true;
-        return $this;
-    }
-
-    public function build(): Burger
-    {
-        return new Burger($this);
+        return new Burger(*this);
     }
 }
 ```
+
 And then it can be used as:
 
-```php
-$burger = (new BurgerBuilder(14))
-                    ->addPepperoni()
+```c++
+Burger* burger = (new BurgerBuilder(14))
+    				->addPepperoni()
                     ->addLettuce()
                     ->addTomato()
                     ->build();
@@ -454,55 +509,71 @@ In short, it allows you to create a copy of an existing object and modify it to 
 
 **Programmatic Example**
 
-In PHP, it can be easily done using `clone`
-
-```php
-class Sheep
+```c++
+class Root
 {
-    protected $name;
-    protected $category;
+public:
+	virtual Root* clone() = 0;
+	virtual void print() = 0;
+};
+class Tree :public Root
+{
+public:
+	Tree(int num, float life) :Number(num), lifetime(life) {}
+	Tree(const Tree& tree)
+	{
+		Number = tree.Number;
+		lifetime = tree.lifetime;
+	}
+	virtual void print() override
+	{
+		std::cout <<"this is tree class!"<< std::endl;
+	}
+	virtual Root* clone()override
+	{
+		return new Tree(*this);
+	}
+private:
+	int number;
+	float lifetime;
+};
 
-    public function __construct(string $name, string $category = 'Mountain Sheep')
+class Leaf :public Tree
+{
+public:
+	Leaf(int num, float life, std::string color)
+		:Tree(num,life),color(color)
     {
-        $this->name = $name;
-        $this->category = $category;
+    	
     }
+	leaf(const Leaf& leaf)
+	{
+		color = leaf.color;
+		number = leaf.number;
+		lifetime = leaf.lifetime;
+	}
+	virtual Root* clone()
+	{
+		return new leaf(*this);
+	}
+	virtual void print()
+	{
+		std::cout << "This is leaf class." << std::endl;
+	}
+private:
+	std::string color;
+};
 
-    public function setName(string $name)
-    {
-        $this->name = $name;
-    }
-
-    public function getName()
-    {
-        return $this->name;
-    }
-
-    public function setCategory(string $category)
-    {
-        $this->category = $category;
-    }
-
-    public function getCategory()
-    {
-        return $this->category;
-    }
-}
 ```
+
 Then it can be cloned like below
-```php
-$original = new Sheep('Jolly');
-echo $original->getName(); // Jolly
-echo $original->getCategory(); // Mountain Sheep
 
-// Clone and modify what is required
-$cloned = clone $original;
-$cloned->setName('Dolly');
-echo $cloned->getName(); // Dolly
-echo $cloned->getCategory(); // Mountain sheep
+```c++
+Leaf  leaf(1,2.0,"red");
+Root* root = leaf.clone();
+root->print(); // Output: This is a leaf class.
 ```
 
-Also you could use the magic method `__clone` to modify the cloning behavior.
 
 **When to use?**
 
@@ -524,42 +595,33 @@ Singleton pattern is actually considered an anti-pattern and overuse of it shoul
 **Programmatic Example**
 
 To create a singleton, make the constructor private, disable cloning, disable extension and create a static variable to house the instance
-```php
-final class President
+
+```c++
+class President
 {
-    private static $instance;
-
-    private function __construct()
+private:
+    President()
     {
-        // Hide the constructor
+        
     }
-
-    public static function getInstance(): President
+public:
+    static President& getInstance()
     {
-        if (!self::$instance) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
+        static President president;
+        return president;
     }
-
-    private function __clone()
-    {
-        // Disable cloning
-    }
-
-    private function __wakeup()
-    {
-        // Disable unserialize
-    }
-}
+    President(const President& president) = delete;
+    void operator=(const President& president) = delete;
+};
 ```
-Then in order to use
-```php
-$president1 = President::getInstance();
-$president2 = President::getInstance();
 
-var_dump($president1 === $president2); // true
+
+Then in order to use
+```c++
+President president1 = President::getInstance();
+President president2 = President::getInstance();
+
+std::cout << &president1==&president2 << std::endl // true
 ```
 
 Structural Design Patterns
