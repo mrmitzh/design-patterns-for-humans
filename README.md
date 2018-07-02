@@ -659,72 +659,83 @@ Consider a game where there is a hunter and he hunts lions.
 
 First we have an interface `Lion` that all types of lions have to implement
 
-```php
-interface Lion
+```C++
+class Lion
 {
-    public function roar();
-}
+public:
+    virtual void roar() = 0;
+};
 
-class AfricanLion implements Lion
+class AfricanLion: public Lion
 {
-    public function roar()
+public:
+	virtual void roar()
     {
+    
     }
-}
+};
 
-class AsianLion implements Lion
+class AsianLion: public Lion
 {
-    public function roar()
+public:
+	virtual void roar()
     {
+    
     }
 }
 ```
+
 And hunter expects any implementation of `Lion` interface to hunt.
-```php
+
+```c++
 class Hunter
 {
-    public function hunt(Lion $lion)
+public:
+    void hunt(Lion* lion)
     {
-        $lion->roar();
+        lion->roar();
     }
-}
+};
 ```
 
 Now let's say we have to add a `WildDog` in our game so that hunter can hunt that also. But we can't do that directly because dog has a different interface. To make it compatible for our hunter, we will have to create an adapter that is compatible
 
-```php
+```c++
 // This needs to be added to the game
 class WildDog
 {
-    public function bark()
-    {
-    }
-}
+public:
+   void bark();
+};
 
 // Adapter around wild dog to make it compatible with our game
-class WildDogAdapter implements Lion
+class WildDogAdapter: public Lion
 {
-    protected $dog;
-
-    public function __construct(WildDog $dog)
+private:
+	WildDog* dog;
+public:
+	WildDogAdapter(WildDog* dog)
+    	dog(dog)
     {
-        $this->dog = $dog;
+    
     }
-
-    public function roar()
+    
+    void roar()
     {
-        $this->dog->bark();
+    	dog->bark();
     }
-}
+};
+
 ```
+
 And now the `WildDog` can be used in our game using `WildDogAdapter`.
 
-```php
-$wildDog = new WildDog();
-$wildDogAdapter = new WildDogAdapter($wildDog);
+```
+WildDog* wildDog = new WildDog();
+WildDogAdapter* wildDogAdapter = new WildDogAdapter(wildDog);
 
-$hunter = new Hunter();
-$hunter->hunt($wildDogAdapter);
+Hunter* hunter = new Hunter();
+hunter->hunt(wildDogAdapter);
 ```
 
 🚡 Bridge
@@ -744,82 +755,96 @@ Wikipedia says
 
 Translating our WebPage example from above. Here we have the `WebPage` hierarchy
 
-```php
-interface WebPage
+```c++
+class WebPage
 {
-    public function __construct(Theme $theme);
-    public function getContent();
+public:
+    WebPage(Theme* theme);
+    virtual std::string getContent() = 0;
+};
+
+class Theme;
+
+class About: public WebPage
+{
+private:
+	Theme* theme;
+public:
+	About(Theme* theme)
+    	:theme(theme)
+    {
+    
+    }
+    virtual std::string getContent()
+    {
+    	return  "About page in " + theme->getColor();
+    }
 }
 
-class About implements WebPage
+class Careers: public WebPage
 {
-    protected $theme;
-
-    public function __construct(Theme $theme)
+private:
+	Theme* theme;
+public:
+	About(Theme* theme)
+    	:theme(theme)
     {
-        $this->theme = $theme;
+    
     }
-
-    public function getContent()
+    virtual std::string getContent()
     {
-        return "About page in " . $this->theme->getColor();
-    }
-}
-
-class Careers implements WebPage
-{
-    protected $theme;
-
-    public function __construct(Theme $theme)
-    {
-        $this->theme = $theme;
-    }
-
-    public function getContent()
-    {
-        return "Careers page in " . $this->theme->getColor();
+    	return "Careers page in " + theme->getColor();
     }
 }
 ```
+
 And the separate theme hierarchy
-```php
 
-interface Theme
+```c++
+class Theme
 {
-    public function getColor();
-}
+public:
+    virtual std::string getColor() = 0;
+};
 
-class DarkTheme implements Theme
+class DarkTheme: public Theme
 {
-    public function getColor()
+public:
+	virtual std::string getColor()
     {
-        return 'Dark Black';
+    	return "Dark Black";
+    }
+};
+
+class LightTheme: public Theme
+{
+public:
+	virtual std::string getColor()
+    {
+    	return "Off white";
     }
 }
-class LightTheme implements Theme
+
+class AquaTheme: public Theme
 {
-    public function getColor()
+public:
+	virtual std::string getColor()
     {
-        return 'Off white';
-    }
-}
-class AquaTheme implements Theme
-{
-    public function getColor()
-    {
-        return 'Light blue';
+    	return "Light blue";
     }
 }
 ```
+
 And both the hierarchies
-```php
-$darkTheme = new DarkTheme();
 
-$about = new About($darkTheme);
-$careers = new Careers($darkTheme);
+```c++
+DarkTheme* darkTheme = new DarkTheme();
 
-echo $about->getContent(); // "About page in Dark Black";
-echo $careers->getContent(); // "Careers page in Dark Black";
+WebPage* about = new About(darkTheme);
+WebPage* careers = new Careers(darkTheme);
+
+std::cout << bout->getContent() << std::endl; // "About page in Dark Black";
+std::cout << careers->getContent() << std::endl; // "Careers page in Dark Black";
 ```
 
 🌿 Composite
