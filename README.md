@@ -607,7 +607,7 @@ private:
 public:
     static President& getInstance()
     {
-        static President president;
+        static President president; // thread safety in C++11 
         return president;
     }
     President(const President& president) = delete;
