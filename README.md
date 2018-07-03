@@ -1950,128 +1950,130 @@ Wikipedia says
 
 Let's take an example of a zoo simulation where we have several different kinds of animals and we have to make them Sound. Let's translate this using visitor pattern
 
-```php
+```c++
 // Visitee
-interface Animal
+class Anmial
 {
-    public function accept(AnimalOperation $operation);
-}
+public:
+    virtual void accept(AnimalOperation* operation) = 0;
+};
 
 // Visitor
-interface AnimalOperation
-{
-    public function visitMonkey(Monkey $monkey);
-    public function visitLion(Lion $lion);
-    public function visitDolphin(Dolphin $dolphin);
-}
+class AnimalOperation {
+  public:
+	virtual void visitMonkey(Monkey* monkey) = 0;
+	virtual void visitLion(Lion* lion) = 0;
+	virtual void visitDolphin(Dolphin* dolphin) = 0;
+};
+
+
 ```
+
 Then we have our implementations for the animals
-```php
-class Monkey implements Animal
-{
-    public function shout()
-    {
-        echo 'Ooh oo aa aa!';
-    }
 
-    public function accept(AnimalOperation $operation)
-    {
-        $operation->visitMonkey($this);
-    }
-}
+```c++
+class Monkey: public Animal {
+  public:
+	void shout() {
+		std::cout << "Ooh oo aa aa!" << std::endl;
+	}
 
-class Lion implements Animal
-{
-    public function roar()
-    {
-        echo 'Roaaar!';
-    }
+	void accept(AnimalOperation* operation) {
+		operation->visitMonkey(this);
+	}
+};
 
-    public function accept(AnimalOperation $operation)
-    {
-        $operation->visitLion($this);
-    }
-}
+class Lion: public Animal {
+  public:
+	void roar() {
+		std::cout << "Roaaar!" << std::endl;
+	}
 
-class Dolphin implements Animal
-{
-    public function speak()
-    {
-        echo 'Tuut tuttu tuutt!';
-    }
+	void accept(AnimalOperation* operation) {
+		operation->visitLion(this);
+	}
+};
 
-    public function accept(AnimalOperation $operation)
-    {
-        $operation->visitDolphin($this);
-    }
-}
+class Dolphin: public Animal {
+  public:
+	void speak() {
+		std::cout << "Tuut tuttu tuutt!" << std::endl;
+	}
+
+	void accept(AnimalOperation* operation) {
+		operation->visitDolphin(this);
+	}
+};
 ```
+
 Let's implement our visitor
-```php
-class Speak implements AnimalOperation
+
+```c++
+class Speak: public AnmialOperation
 {
-    public function visitMonkey(Monkey $monkey)
+public:
+	void visitMonkey(Monkey* monkey)
     {
-        $monkey->shout();
+    	monkey->shout();
     }
-
-    public function visitLion(Lion $lion)
+    
+    void visitLion(Lion* lion)
     {
-        $lion->roar();
+    	lion->roar();
     }
-
-    public function visitDolphin(Dolphin $dolphin)
+    
+    void visitDolphin(Dolphin* dolphin)
     {
-        $dolphin->speak();
+    	dolphin->speak();
     }
-}
+};
 ```
 
 And then it can be used as
-```php
-$monkey = new Monkey();
-$lion = new Lion();
-$dolphin = new Dolphin();
 
-$speak = new Speak();
-
-$monkey->accept($speak);    // Ooh oo aa aa!    
-$lion->accept($speak);      // Roaaar!
-$dolphin->accept($speak);   // Tuut tutt tuutt!
+```c++
+auto monkey = new Monkey();
+auto lion = new Lion();
+auto dolphin = new Dolphin();
+auto speak = new Speak();
+auto jump = new Jump();
+monkey->accept(speak);	// Ooh oo aa aa!  
+lion->accept(speak);	// Roaaar!
+dolphin->accept(speak); // Tuut tutt tuutt!
 ```
+
 We could have done this simply by having an inheritance hierarchy for the animals but then we would have to modify the animals whenever we would have to add new actions to animals. But now we will not have to change them. For example, let's say we are asked to add the jump behavior to the animals, we can simply add that by creating a new visitor i.e.
 
-```php
-class Jump implements AnimalOperation
-{
-    public function visitMonkey(Monkey $monkey)
-    {
-        echo 'Jumped 20 feet high! on to the tree!';
-    }
+```c++
+class Jump: public AnimalOperation {
+  public:
+	void visitMonkey(Monkey* monkey) {
+		std::cout << "Jumped 20 feet high! on to the tree!" << std::endl;
+	}
 
-    public function visitLion(Lion $lion)
-    {
-        echo 'Jumped 7 feet! Back on the ground!';
-    }
+	void visitLion(Lion* lion) {
+		std::cout << "Jumped 7 feet! Back on the ground!" << std::endl;
+	}
 
-    public function visitDolphin(Dolphin $dolphin)
-    {
-        echo 'Walked on water a little and disappeared';
-    }
-}
+	void visitDolphin(Dolphin* dolphin) {
+		std::cout << "Walked on water a little and disappeared" << std::endl;
+	}
+};
 ```
+
 And for the usage
-```php
-$jump = new Jump();
 
-$monkey->accept($speak);   // Ooh oo aa aa!
-$monkey->accept($jump);    // Jumped 20 feet high! on to the tree!
+```c++
+auto jump = new Jump();
 
-$lion->accept($speak);     // Roaaar!
-$lion->accept($jump);      // Jumped 7 feet! Back on the ground!
+monkey->accept(speak);   // Ooh oo aa aa!
+monkey->accept(jump);    // Jumped 20 feet high! on to the tree!
 
-$dolphin->accept($speak);  // Tuut tutt tuutt!
-$dolphin->accept($jump);   // Walked on water a little and disappeared
+lion->accept(speak);     // Roaaar!
+lion->accept(jump);      // Jumped 7 feet! Back on the ground!
+
+dolphin->accept(speak);  // Tuut tutt tuutt!
+dolphin->accept(jump);   // Walked on water a little and disappeared
 ```
 
 💡 Strategy
@@ -2090,61 +2092,56 @@ Wikipedia says
 
 Translating our example from above. First of all we have our strategy interface and different strategy implementations
 
-```php
-interface SortStrategy
-{
-    public function sort(array $dataset): array;
-}
+```c++
+class SortStrategy {
+  public:
+	virtual void sort(std::vector<int>& data) = 0;
+};
 
-class BubbleSortStrategy implements SortStrategy
-{
-    public function sort(array $dataset): array
-    {
-        echo "Sorting using bubble sort";
+class BubbleSortStrategy: public SortStrategy {
+  public:
+	void sort(std::vector<int>& data) {
+		std::cout << "Sorting using bubble sort" << std::endl;
+	}
+};
 
-        // Do sorting
-        return $dataset;
-    }
-}
-
-class QuickSortStrategy implements SortStrategy
-{
-    public function sort(array $dataset): array
-    {
-        echo "Sorting using quick sort";
-
-        // Do sorting
-        return $dataset;
-    }
-}
+class QuickSortStrategy: public SortStrategy {
+  public:
+	void sort(std::vector<int>& data) {
+		std::cout << "Sorting using quick sort" << std::endl;
+	}
+};
 ```
 
 And then we have our client that is going to use any strategy
-```php
-class Sorter
-{
-    protected $sorter;
 
-    public function __construct(SortStrategy $sorter)
-    {
-        $this->sorter = $sorter;
-    }
+```c++
+class Sorter {
+private:
+	SortStrategy* sorter = nullptr;
+public:
+	Sorter(SortStrategy* sorter)
+        :sorter(soter)
+        {}
 
-    public function sort(array $dataset): array
-    {
-        return $this->sorter->sort($dataset);
-    }
-}
+	void sort(std::vector<int>& data) {
+		return sorter->sort(data);
+	}
+};
 ```
+
 And it can be used as
-```php
-$dataset = [1, 5, 4, 3, 2, 8];
 
-$sorter = new Sorter(new BubbleSortStrategy());
-$sorter->sort($dataset); // Output : Sorting using bubble sort
+```c++
+std::vector<int> data1 = {1, 5, 4, 3, 2, 8};
 
-$sorter = new Sorter(new QuickSortStrategy());
-$sorter->sort($dataset); // Output : Sorting using quick sort
+auto sorter1 = new Sorter(new BubbleSortStrategy());
+sorter1->sort(data1); // Output : Sorting using bubble sort
+
+std::vector<int> data2 = {1, 5, 4, 3, 2, 8};
+
+auto sorter2 = new Sorter(new QuickSortStrategy());
+sorter2->sort(data2); // Output : Sorting using quick sort
 ```
 
 💢 State
@@ -2165,73 +2162,73 @@ Let's take an example of text editor, it lets you change the state of text that 
 
 First of all we have our state interface and some state implementations
 
-```php
-interface WritingState
-{
-    public function write(string $words);
-}
+```c++
+class WritingState {
+  public:
+	virtual void write(std::string words) = 0;
+};
 
-class UpperCase implements WritingState
-{
-    public function write(string $words)
-    {
-        echo strtoupper($words);
-    }
-}
+class UpperCase: public WritingState {
+  public:
+	void write(std::string words) {
+		std::transform(words.begin(), words.end(), words.begin(), ::toupper);
+		std::cout << words << std::endl;
+	}
+};
 
-class LowerCase implements WritingState
-{
-    public function write(string $words)
-    {
-        echo strtolower($words);
-    }
-}
+class LowerCase: public WritingState {
+  public:
+	void write(std::string words) {
+		std::transform(words.begin(), words.end(), words.begin(), ::tolower);
+		std::cout << words << std::endl;
+	}
+};
 
-class DefaultText implements WritingState
-{
-    public function write(string $words)
-    {
-        echo $words;
-    }
-}
+class Default: public WritingState {
+  public:
+	void write(std::string words) {
+		std::cout << words << std::endl;
+	}
+};
 ```
+
 Then we have our editor
-```php
-class TextEditor
-{
-    protected $state;
 
-    public function __construct(WritingState $state)
+```c++
+class TextEditor {
+private:
+	WritingState* state = nullptr;
+public:
+	TextEditor(WritingState* state) 
+        :state(state)
     {
-        $this->state = $state;
-    }
+	}
 
-    public function setState(WritingState $state)
-    {
-        $this->state = $state;
-    }
+	void setState(WritingState* state) {
+		state = state;
+	}
 
-    public function type(string $words)
-    {
-        $this->state->write($words);
-    }
-}
+	void type(std::string words) {
+		state->write(words);
+	}
+};
 ```
+
 And then it can be used as
-```php
-$editor = new TextEditor(new DefaultText());
 
-$editor->type('First line');
+```c++
+auto editor = new TextEditor(new Default());
 
-$editor->setState(new UpperCase());
+editor->type("First line");
 
-$editor->type('Second line');
-$editor->type('Third line');
+editor->setState(new UpperCase());
+editor->type("Second line");
 
-$editor->setState(new LowerCase());
+editor->type("Third line");
+editor->setState(new LowerCase());
 
-$editor->type('Fourth line');
-$editor->type('Fifth line');
+editor->type("Fourth line");
+editor->type("Fifth line");
 
 // Output:
 // First line
@@ -2264,80 +2261,73 @@ Wikipedia says
 Imagine we have a build tool that helps us test, lint, build, generate build reports (i.e. code coverage reports, linting report etc) and deploy our app on the test server.
 
 First of all we have our base class that specifies the skeleton for the build algorithm
-```php
-abstract class Builder
-{
 
-    // Template method
-    final public function build()
-    {
-        $this->test();
-        $this->lint();
-        $this->assemble();
-        $this->deploy();
-    }
+```c++
+class Builder {
+  public:
+	// template method
+	void build() {
+		this->test();
+		this->lint();
+		this->assemble();
+		this->deploy();
+	}
 
-    abstract public function test();
-    abstract public function lint();
-    abstract public function assemble();
-    abstract public function deploy();
-}
+	virtual void test() = 0;
+	virtual void lint() = 0;
+	virtual void assemble() = 0;
+	virtual void deploy() = 0;
+};
 ```
 
 Then we can have our implementations
 
-```php
-class AndroidBuilder extends Builder
-{
-    public function test()
-    {
-        echo 'Running android tests';
-    }
+```c++
+class AndroidBuilder: public Builder {
+  public:
+	void test() {
+		std::cout << "Running Android tests" << std::endl;
+	}
 
-    public function lint()
-    {
-        echo 'Linting the android code';
-    }
+	void lint() {
+		std::cout << "Linting the Android code" << std::endl;
+	}
 
-    public function assemble()
-    {
-        echo 'Assembling the android build';
-    }
+	void assemble() {
+		std::cout << "Assembling the Android build" << std::endl;
+	}
 
-    public function deploy()
-    {
-        echo 'Deploying android build to server';
-    }
-}
+	void deploy() {
+		std::cout << "Deploying Android build to server" << std::endl;
+	}
+};
 
-class IosBuilder extends Builder
-{
-    public function test()
-    {
-        echo 'Running ios tests';
-    }
+class IosBuilder: public Builder {
+  public:
+	void test() {
+		std::cout << "Running iOS tests" << std::endl;
+	}
 
-    public function lint()
-    {
-        echo 'Linting the ios code';
-    }
+	void lint() {
+		std::cout << "Linting the iOS code" << std::endl;
+	}
 
-    public function assemble()
-    {
-        echo 'Assembling the ios build';
-    }
+	void assemble() {
+		std::cout << "Assembling the iOS build" << std::endl;
+	}
 
-    public function deploy()
-    {
-        echo 'Deploying ios build to server';
-    }
-}
+	void deploy() {
+		std::cout << "Deploying iOS build to server" << std::endl;
+	}
+};
+
 ```
+
 And then it can be used as
 
-```php
-$androidBuilder = new AndroidBuilder();
-$androidBuilder->build();
+```c++
+auto androidBuilder = new AndroidBuilder();
+androidBuilder->build();
 
 // Output:
 // Running android tests
@@ -2345,8 +2335,8 @@ $androidBuilder->build();
 // Assembling the android build
 // Deploying android build to server
 
-$iosBuilder = new IosBuilder();
-$iosBuilder->build();
+auto iosBuilder = new IosBuilder();
+iosBuilder->build();
 
 // Output:
 // Running ios tests
