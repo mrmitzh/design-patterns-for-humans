@@ -859,125 +859,82 @@ In plain words
 Wikipedia says
 > In software engineering, the composite pattern is a partitioning design pattern. The composite pattern describes that a group of objects is to be treated in the same way as a single instance of an object. The intent of a composite is to "compose" objects into tree structures to represent part-whole hierarchies. Implementing the composite pattern lets clients treat individual objects and compositions uniformly.
 
+Ways to create a Composite Pattern.
+
+>1. Identify the scalar/primitive classes and vector/container classes
+>2. Create an "interface" (lowest common denominator) that can make all concrete classes "interchangeable"
+>3. All concrete classes declare an "is a" relationship to the interface
+>4. All "container" classes couple themselves to the interface (recursive composition, Composite "has a" set of children up the "is a" hierarchy)
+>5. "Container" classes use polymorphism as they delegate to their children
+
+
+
 **Programmatic Example**
 
-Taking our employees example from above. Here we have different employee types
-
-```php
-interface Employee
+```c++
+// 2. Create an "interface" (lowest common denominator)
+class Component
 {
-    public function __construct(string $name, float $salary);
-    public function getName(): string;
-    public function setSalary(float $salary);
-    public function getSalary(): float;
-    public function getRoles(): array;
-}
+  public:
+    virtual void traverse() = 0;
+};
 
-class Developer implements Employee
+class Leaf: public Component
 {
-    protected $salary;
-    protected $name;
-    protected $roles;
-    
-    public function __construct(string $name, float $salary)
+    // 1. Scalar class   3. "isa" relationship
+    int value;
+  public:
+    Leaf(int val)
     {
-        $this->name = $name;
-        $this->salary = $salary;
+        value = val;
     }
-
-    public function getName(): string
+    void traverse()
     {
-        return $this->name;
+        cout << value << ' ';
     }
+};
 
-    public function setSalary(float $salary)
-    {
-        $this->salary = $salary;
-    }
-
-    public function getSalary(): float
-    {
-        return $this->salary;
-    }
-
-    public function getRoles(): array
-    {
-        return $this->roles;
-    }
-}
-
-class Designer implements Employee
+class Composite: public Component
 {
-    protected $salary;
-    protected $name;
-    protected $roles;
-
-    public function __construct(string $name, float $salary)
+    // 1. Vector class   3. "isa" relationship
+    vector < Component * > children; // 4. "container" coupled to the interface
+  public:
+    // 4. "container" class coupled to the interface
+    void add(Component *ele)
     {
-        $this->name = $name;
-        $this->salary = $salary;
+        children.push_back(ele);
     }
-
-    public function getName(): string
+    void traverse()
     {
-        return $this->name;
+        for (int i = 0; i < children.size(); i++)
+        // 5. Use polymorphism to delegate to children
+          children[i]->traverse();
     }
+};
 
-    public function setSalary(float $salary)
-    {
-        $this->salary = $salary;
-    }
-
-    public function getSalary(): float
-    {
-        return $this->salary;
-    }
-
-    public function getRoles(): array
-    {
-        return $this->roles;
-    }
-}
-```
-
-Then we have an organization which consists of several different types of employees
-
-```php
-class Organization
+int main()
 {
-    protected $employees;
+  Composite containers[4];
 
-    public function addEmployee(Employee $employee)
-    {
-        $this->employees[] = $employee;
-    }
+  for (int i = 0; i < 4; i++)
+    for (int j = 0; j < 3; j++)
+      containers[i].add(new Leaf(i *3+j));
 
-    public function getNetSalaries(): float
-    {
-        $netSalary = 0;
+  for (i = 1; i < 4; i++)
+    containers[0].add(&(containers[i]));
 
-        foreach ($this->employees as $employee) {
-            $netSalary += $employee->getSalary();
-        }
-
-        return $netSalary;
-    }
+  for (i = 0; i < 4; i++)
+  {
+    containers[i].traverse();
+    cout << endl;
+  }
 }
-```
-
-And then it can be used as
-
-```php
-// Prepare the employees
-$john = new Developer('John Doe', 12000);
-$jane = new Designer('Jane Doe', 15000);
-
-// Add them to organization
-$organization = new Organization();
-$organization->addEmployee($john);
-$organization->addEmployee($jane);
-
-echo "Net salaries: " . $organization->getNetSalaries(); // Net Salaries: 27000
+/*
+0 1 2 3 4 5 6 7 8 9 10 11
+3 4 5
+6 7 8
+9 10 11
+*/
 ```
 
 ☕ Decorator
@@ -997,108 +954,107 @@ Wikipedia says
 
 Lets take coffee for example. First of all we have a simple coffee implementing the coffee interface
 
-```php
-interface Coffee
+```c++
+class Coffee
 {
-    public function getCost();
-    public function getDescription();
-}
+public:
+    virtual int getCost() = 0;
+    virtual std::string getDescription();
+};
 
-class SimpleCoffee implements Coffee
+class SimpleCoffee: public Coffee
 {
-    public function getCost()
+public:
+	virtual int getCost()
     {
-        return 10;
+    	return 10;
     }
-
-    public function getDescription()
+    virtual std::string getDescription()
     {
-        return 'Simple coffee';
+    	return "Simple coffee";
     }
 }
 ```
+
 We want to make the code extensible to allow options to modify it if required. Lets make some add-ons (decorators)
-```php
-class MilkCoffee implements Coffee
+
+```c++
+class MilkCoffee: public Coffee
 {
-    protected $coffee;
-
-    public function __construct(Coffee $coffee)
+private:
+	Coffee* coffee;
+public:
+	MilkCoffee(Coffee* coffee)
+		:coffee(coffee)
+	{}
+	virtual int getCost()
     {
-        $this->coffee = $coffee;
+    	return this->coffee->getCost() + 2;
     }
-
-    public function getCost()
+    virtual std::string getDescription()
     {
-        return $this->coffee->getCost() + 2;
+    	return this->coffee->getDescription + ", milk";
     }
+};
 
-    public function getDescription()
-    {
-        return $this->coffee->getDescription() . ', milk';
-    }
-}
-
-class WhipCoffee implements Coffee
+class WhipCoffee: public Coffee
 {
-    protected $coffee;
-
-    public function __construct(Coffee $coffee)
+private:
+	Coffee* coffee;
+public:
+	WhipCoffee(Coffee* coffee)
+		:coffee(coffee)
+	{}
+	virtual int getCost()
     {
-        $this->coffee = $coffee;
+    	return this->coffee->getCost() + 5;
     }
-
-    public function getCost()
+    virtual std::string getDescription()
     {
-        return $this->coffee->getCost() + 5;
+    	return this->coffee->getDescription + ", whip";
     }
+};
 
-    public function getDescription()
-    {
-        return $this->coffee->getDescription() . ', whip';
-    }
-}
-
-class VanillaCoffee implements Coffee
+class VanillaCoffee: public Coffee
 {
-    protected $coffee;
-
-    public function __construct(Coffee $coffee)
+private:
+	Coffee* coffee;
+public:
+	VanillaCoffee(Coffee* coffee)
+		:coffee(coffee)
+	{}
+	virtual int getCost()
     {
-        $this->coffee = $coffee;
+    	return this->coffee->getCost() + 3;
     }
-
-    public function getCost()
+    virtual std::string getDescription()
     {
-        return $this->coffee->getCost() + 3;
+    	return this->coffee->getDescription + ", vanilla";
     }
-
-    public function getDescription()
-    {
-        return $this->coffee->getDescription() . ', vanilla';
-    }
-}
+};
 ```
 
 Lets make a coffee now
 
-```php
-$someCoffee = new SimpleCoffee();
-echo $someCoffee->getCost(); // 10
-echo $someCoffee->getDescription(); // Simple Coffee
+```c++
+Coffee* someCoffee = new SimpleCoffee();
+std::cout << someCoffee->getCost(); // 10
+std::cout << someCoffee->getDescription(); // Simple Coffee
 
-$someCoffee = new MilkCoffee($someCoffee);
-echo $someCoffee->getCost(); // 12
-echo $someCoffee->getDescription(); // Simple Coffee, milk
+someCoffee = new MilkCoffee(someCoffee);
+std::cout << someCoffee->getCost(); //12
+std::cout << someCoffee->getDescription(); // Simple Coffee, milk
 
-$someCoffee = new WhipCoffee($someCoffee);
-echo $someCoffee->getCost(); // 17
-echo $someCoffee->getDescription(); // Simple Coffee, milk, whip
+someCoffee = new WhipCoffee(someCoffee);
+std::cout << someCoffee->getCost(); //17
+std::cout << someCoffee->getDescritpion(); // Simple Coffee, milk, whip
 
-$someCoffee = new VanillaCoffee($someCoffee);
-echo $someCoffee->getCost(); // 20
-echo $someCoffee->getDescription(); // Simple Coffee, milk, whip, vanilla
+someCoffee = new VanillaCoffee(someCoffee);
+std::cout << someCoffee->getCost(); //20
+std::cout << someCoffee->getDescription(); // Simple Coffee, milk, whip, vanilla
 ```
+
+
 
 📦 Facade
 ----------------
@@ -1116,77 +1072,82 @@ Wikipedia says
 
 Taking our computer example from above. Here we have the computer class
 
-```php
+```c++
 class Computer
 {
-    public function getElectricShock()
+public:
+ 	void getElectricShock()
     {
-        echo "Ouch!";
+        std::cout << "Ouch!" << std::endl;
     }
 
-    public function makeSound()
+    void makeSound()
     {
-        echo "Beep beep!";
+        std::cout << "Beep beep!" << std::endl;
     }
 
-    public function showLoadingScreen()
+    void showLoadingScreen()
     {
-        echo "Loading..";
+        std::cout << "Loading" << std::endl;
     }
 
-    public function bam()
+    void bam()
     {
-        echo "Ready to be used!";
+        std::cout << "Ready to be used!" << std::endl;
     }
 
-    public function closeEverything()
+    void closeEverything()
     {
-        echo "Bup bup bup buzzzz!";
+        std::cout << "Bup bup bup buzzzz!" << std::endl;
     }
 
-    public function sooth()
+    void sooth()
     {
-        echo "Zzzzz";
+        std::cout << "Zzzzz" << std::endl;
     }
-
-    public function pullCurrent()
+    
+    void pullCurrent()
     {
-        echo "Haaah!";
+        std::cout << "Haaah!" << std::endl;
     }
-}
+};
 ```
+
 Here we have the facade
-```php
+
+```c++
 class ComputerFacade
 {
-    protected $computer;
-
-    public function __construct(Computer $computer)
+private:
+    Computer computer;
+public:
+    ComputerFacade(Computer computer)
+        :computer(computer)
+    {}
+    void turnOn()
     {
-        $this->computer = $computer;
+        computer.getElementricShock();
+        computer.makeSound();
+        computer.showLoadingScreen();
+        computer.bam();
     }
-
-    public function turnOn()
+    
+    void turnOff()
     {
-        $this->computer->getElectricShock();
-        $this->computer->makeSound();
-        $this->computer->showLoadingScreen();
-        $this->computer->bam();
+        computer.closeEverything();
+        computer.pullCurrent();
+        computer.sooth();
     }
-
-    public function turnOff()
-    {
-        $this->computer->closeEverything();
-        $this->computer->pullCurrent();
-        $this->computer->sooth();
-    }
-}
+};
 ```
+
 Now to use the facade
-```php
-$computer = new ComputerFacade(new Computer());
-$computer->turnOn(); // Ouch! Beep beep! Loading.. Ready to be used!
-$computer->turnOff(); // Bup bup buzzz! Haah! Zzzzz
+
+```c++
+Computer computer;
+ComputerFacade computerFacade(computer);
+computer.turnOn(); // Ouch! Beep beep! Loading.. Ready to be used!
+computer.turnOff(); // Bup bup buzzz! Haah! Zzzzz
 ```
 
 🍃 Flyweight
@@ -1205,66 +1166,65 @@ Wikipedia says
 
 Translating our tea example from above. First of all we have tea types and tea maker
 
-```php
+```c++
 // Anything that will be cached is flyweight.
 // Types of tea here will be flyweights.
 class KarakTea
 {
-}
+};
 
 // Acts as a factory and saves the tea
 class TeaMaker
 {
-    protected $availableTea = [];
-
-    public function make($preference)
+private:
+    std::map<std::string,KarakTea*> availableTea;
+public:
+    void make(const std::string& preference)
     {
-        if (empty($this->availableTea[$preference])) {
-            $this->availableTea[$preference] = new KarakTea();
-        }
-
-        return $this->availableTea[$preference];
+        if(availableTea.find(preference)==availableTea.end())
+            availableTea[preference] = new KarakTea();
+        return availableTea[preference];
     }
-}
+};
 ```
 
 Then we have the `TeaShop` which takes orders and serves them
 
-```php
+```c++
 class TeaShop
 {
-    protected $orders;
-    protected $teaMaker;
-
-    public function __construct(TeaMaker $teaMaker)
+private:
+    std::map<int,KarakTea*> orders;
+    TeaMaker* teaMaker;
+public:
+    TeaShop(TeaMaker* teaMaker)
+        :teaMaker(teaMaker)
+    {}
+    
+    void takeOrder(const std::string& teaType, int table)
     {
-        $this->teaMaker = $teaMaker;
+        orders[table] = teaMaker->make(teaType);
     }
-
-    public function takeOrder(string $teaType, int $table)
+    
+    void serve()
     {
-        $this->orders[$table] = $this->teaMaker->make($teaType);
+        std::foreach(orders.begin,orders.end(),[](std::pair<int,KarakTea*> value){
+            std::cout << "Serving tea to table# " << value.first << std::endl;
+        })
     }
-
-    public function serve()
-    {
-        foreach ($this->orders as $table => $tea) {
-            echo "Serving tea to table# " . $table;
-        }
-    }
-}
+};
 ```
+
 And it can be used as below
 
-```php
-$teaMaker = new TeaMaker();
-$shop = new TeaShop($teaMaker);
+```c++
+TeaShop teaShop(new TeaMaker());
 
-$shop->takeOrder('less sugar', 1);
-$shop->takeOrder('more milk', 2);
-$shop->takeOrder('without sugar', 5);
+teaShop->takeOrder("less sugar",1);
+teaShop->takeOrder("more milk",2);
+teaShop->takeOrder("without sugar",5);
 
-$shop->serve();
+teaShop.serve();
 // Serving tea to table# 1
 // Serving tea to table# 2
 // Serving tea to table# 5
@@ -1285,65 +1245,69 @@ Wikipedia says
 
 Taking our security door example from above. Firstly we have the door interface and an implementation of door
 
-```php
-interface Door
+```c++
+class Door
 {
-    public function open();
-    public function close();
-}
+public:
+    virtual void open() = 0;
+    virtual void close() = 0;
+};
 
-class LabDoor implements Door
+class LabDoor: public Door
 {
-    public function open()
+public:
+	virtual void open()
     {
-        echo "Opening lab door";
+    	std::cout << "Opening lab door" << std::endl;
     }
-
-    public function close()
+    virtual void close()
     {
-        echo "Closing the lab door";
+    	std::cout << "Closing the lab door" << std::endl;  
     }
 }
 ```
+
 Then we have a proxy to secure any doors that we want
-```php
+
+```c++
 class SecuredDoor
 {
-    protected $door;
-
-    public function __construct(Door $door)
+private:
+    Door* door;
+public:
+    SecuredDoor(Door* door)
+    	:door(door)
+    {}
+    void open(const std::string& password)
     {
-        $this->door = $door;
+        if(authenticate(password))
+            door->open();
+        else
+            std::cout << "Big no! It ain't possible.";
     }
-
-    public function open($password)
+    
+    bool authenticate(const std::string& password)
     {
-        if ($this->authenticate($password)) {
-            $this->door->open();
-        } else {
-            echo "Big no! It ain't possible.";
-        }
+        return password == "$ecr@t";
     }
-
-    public function authenticate($password)
+    
+    void close()
     {
-        return $password === '$ecr@t';
+        door->close();
     }
-
-    public function close()
-    {
-        $this->door->close();
-    }
-}
+};
 ```
+
 And here is how it can be used
-```php
-$door = new SecuredDoor(new LabDoor());
-$door->open('invalid'); // Big no! It ain't possible.
 
-$door->open('$ecr@t'); // Opening lab door
-$door->close(); // Closing lab door
+```c++
+SecuredDoor door(new LabDoor());
+door.open("invalid"); // Big no! It ain't possible.
+
+door.open("$ecr@t"); // Opening lab door
+door.close(); // Closing lab door
 ```
+
 Yet another example would be some sort of data-mapper implementation. For example, I recently made an ODM (Object Data Mapper) for MongoDB using this pattern where I wrote a proxy around mongo classes while utilizing the magic method `__call()`. All the method calls were proxied to the original mongo class and result retrieved was returned as it is but in case of `find` or `findOne` data was mapped to the required class objects and the object was returned instead of `Cursor`.
 
 Behavioral Design Patterns
