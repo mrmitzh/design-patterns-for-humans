@@ -1562,96 +1562,109 @@ Wikipedia says
 
 **Programmatic example**
 
-In PHP it is quite easy to implement using SPL (Standard PHP Library). Translating our radio stations example from above. First of all we have `RadioStation`
+Translating our radio stations example from above. First of all we have `RadioStation`
 
-```php
-class RadioStation
-{
-    protected $frequency;
+```c++
+class RadioStation {
+private:
+	float frequency = 0.0;
 
-    public function __construct(float $frequency)
+public:
+	RadioStation(float frequency)
+        :frequency(frequency)
     {
-        $this->frequency = $frequency;
-    }
+	}
 
-    public function getFrequency(): float
-    {
-        return $this->frequency;
-    }
-}
+	float getFrequency() {
+		return frequency;
+	}
+};
 ```
+
 Then we have our iterator
 
-```php
-use Countable;
-use Iterator;
-
-class StationList implements Countable, Iterator
+```c++
+class StationList
 {
-    /** @var RadioStation[] $stations */
-    protected $stations = [];
-
-    /** @var int $counter */
-    protected $counter;
-
-    public function addStation(RadioStation $station)
+private:
+    std::vector<RadioStation*> stations;
+    int counter = 0;
+public:
+    void addStation(RadioStation* station)
     {
-        $this->stations[] = $station;
+        stations.push_back(station);
     }
-
-    public function removeStation(RadioStation $toRemove)
+    void remoreStation(RadioStation* toRemove)
     {
-        $toRemoveFrequency = $toRemove->getFrequency();
-        $this->stations = array_filter($this->stations, function (RadioStation $station) use ($toRemoveFrequency) {
-            return $station->getFrequency() !== $toRemoveFrequency;
-        });
+        float toRemoveFrequency = toRemove->getFrequency();
+        auto newEnd = std::remove_if(stations.begin(),stations.end(),[&toReomoveFrequency](RadioStation* station)
+		{
+        	return std::abs(station->getFrequency() - toRemoveFrequency) <= std::numeric_limits<float>::epsilon();                                 
+		});
+        stations.erase(newEnd,stations.end());
     }
-
-    public function count(): int
+    
+    int count()
     {
-        return count($this->stations);
+        return stations.size();
     }
-
-    public function current(): RadioStation
+    
+    RadioStation* current()
     {
-        return $this->stations[$this->counter];
+        return stations[counter];
     }
-
-    public function key()
+    
+    int key()
     {
-        return $this->counter;
+        return counter;
     }
-
-    public function next()
+    
+    void next()
     {
-        $this->counter++;
+        ++counter;
     }
-
-    public function rewind()
+    
+    void rewind()
     {
-        $this->counter = 0;
+        counter = 0;
     }
-
-    public function valid(): bool
+    
+    bool valid()
     {
-        return isset($this->stations[$this->counter]);
+        return counter < count();
     }
-}
+};
 ```
+
 And then it can be used as
-```php
-$stationList = new StationList();
 
-$stationList->addStation(new RadioStation(89));
-$stationList->addStation(new RadioStation(101));
-$stationList->addStation(new RadioStation(102));
-$stationList->addStation(new RadioStation(103.2));
-
-foreach($stationList as $station) {
-    echo $station->getFrequency() . PHP_EOL;
+```c++
+auto stationList = new StationList();
+stationList->addStation(new RadioStation(89));
+stationList->addStation(new RadioStation(101));
+stationList->addStation(new RadioStation(102));
+stationList->addStation(new RadioStation(103.2));
+for (auto i = stationList->count(); i > 0; --i) {
+	std::cout << stationList->current()->getFrequency() << std::endl;
+	stationList->next();
 }
-
-$stationList->removeStation(new RadioStation(89)); // Will remove station 89
+// =====
+// 89
+// 101
+// 102
+// 103.2
+// =====
+stationList->remove(new RadioStation(89));
+stationList->rewind();
+for (auto i = stationList->count(); i > 0; --i) {
+	std::cout << stationList->current()->getFrequency() << std::endl;
+	stationList->next();
+}
+// =====
+// 101
+// 102
+// 103.2
+// =====
 ```
 
 👽 Mediator
@@ -1672,62 +1685,65 @@ Here is the simplest example of a chat room (i.e. mediator) with users (i.e. col
 
 First of all, we have the mediator i.e. the chat room
 
-```php
-interface ChatRoomMediator 
-{
-    public function showMessage(User $user, string $message);
-}
+```c++
+class ChatRoomMediator {
+  public:
+	virtual void showMessage(User* user, std::string message) = 0;
+};
 
-// Mediator
-class ChatRoom implements ChatRoomMediator
-{
-    public function showMessage(User $user, string $message)
+class ChatRoom: public ChatRoomMediator {
+  public:
+	virtual void showMessage(User* user, std::string message)
     {
-        $time = date('M d, y H:i');
-        $sender = $user->getName();
-
-        echo $time . '[' . $sender . ']:' . $message;
+		auto t = time(nullptr);
+		auto charTime = ctime(&t);
+		auto sender = user->getName();
+		std::cout << charTime << "[" << sender << "]: " << message << std::endl;
     }
-}
+};
 ```
 
 Then we have our users i.e. colleagues
-```php
+
+```c++
 class User {
-    protected $name;
-    protected $chatMediator;
+private:
+	std::string name;
+	ChatRoomMediator* chatMediator;
+public:
+	User(std::string name, ChatRoomMediator* chatMediator) 
+        :name(name),chatMediator(chatMediator)
+    {
+	}
 
-    public function __construct(string $name, ChatRoomMediator $chatMediator) {
-        $this->name = $name;
-        $this->chatMediator = $chatMediator;
-    }
+	std::string getName() {
+		return name;
+	}
 
-    public function getName() {
-        return $this->name;
-    }
-
-    public function send($message) {
-        $this->chatMediator->showMessage($this, $message);
-    }
-}
+	void send(std::string message) {
+		chatMediator->showMessage(this, message);
+	}
+};
 ```
+
 And the usage
-```php
-$mediator = new ChatRoom();
 
-$john = new User('John Doe', $mediator);
-$jane = new User('Jane Doe', $mediator);
-
-$john->send('Hi there!');
-$jane->send('Hey!');
-
+```c++
+auto mediator = new ChatRoom();
+auto john = new User("John Doe", mediator);
+auto jane = new User("Jane Doe", mediator);
+john->send("Hi there!");
+jane->send("Hey!");
 // Output will be
 // Feb 14, 10:58 [John]: Hi there!
 // Feb 14, 10:58 [Jane]: Hey!
 ```
 
+
+
 💾 Memento
 -------
+
 Real world example
 > Take the example of calculator (i.e. originator), where whenever you perform some calculation the last calculation is saved in memory (i.e. memento) so that you can get back to it and maybe get it restored using some action buttons (i.e. caretaker).
 
@@ -1745,74 +1761,69 @@ Lets take an example of text editor which keeps saving the state from time to ti
 
 First of all we have our memento object that will be able to hold the editor state
 
-```php
-class EditorMemento
-{
-    protected $content;
-
-    public function __construct(string $content)
+```c++
+class EditorMemento {
+private:
+	std::string content;
+ public:
+	EditorMemento(std::string content) 
+        :content(content)
     {
-        $this->content = $content;
-    }
+	}
 
-    public function getContent()
-    {
-        return $this->content;
-    }
-}
+	std::string getContent() {
+		return content;
+	}
+};
 ```
 
 Then we have our editor i.e. originator that is going to use memento object
 
-```php
-class Editor
-{
-    protected $content = '';
-
-    public function type(string $words)
+```c++
+class Editor {
+private:
+	std::string content;
+public:
+	void type(std::string words) 
     {
-        $this->content = $this->content . ' ' . $words;
-    }
+        content += " " + words;
+	}
 
-    public function getContent()
-    {
-        return $this->content;
-    }
+	std::string getContent() {
+		return content;
+	}
 
-    public function save()
-    {
-        return new EditorMemento($this->content);
-    }
+	EditorMemento* save() {
+		return new EditorMemento(content);
+	}
 
-    public function restore(EditorMemento $memento)
-    {
-        $this->content = $memento->getContent();
-    }
-}
+	void restore(EditorMemento* memento) {
+        content = memento->getContent();
+	}
+};
 ```
 
 And then it can be used as
 
-```php
-$editor = new Editor();
+```c++
+auto editor = new Editor();
 
 // Type some stuff
-$editor->type('This is the first sentence.');
-$editor->type('This is second.');
+editor->type("This is the first sentence.");
+editor->type("This is second.");
 
 // Save the state to restore to : This is the first sentence. This is second.
-$saved = $editor->save();
+auto saved = editor->save();
 
 // Type some more
-$editor->type('And this is third.');
+editor->type("And this is third.");
 
 // Output: Content before Saving
-echo $editor->getContent(); // This is the first sentence. This is second. And this is third.
+std::cout << editor->getContent() << std::endl; // This is the first sentence. This is second. And this is third.
 
 // Restoring to last saved state
-$editor->restore($saved);
-
-$editor->getContent(); // This is the first sentence. This is second.
+editor->restore(saved);
+std::cout << editor->getContent() << std::endl; // This is the first sentence. This is second.
 ```
 
 😎 Observer
@@ -1829,75 +1840,95 @@ Wikipedia says
 **Programmatic example**
 
 Translating our example from above. First of all we have job seekers that need to be notified for a job posting
-```php
-class JobPost
+
+```c++
+class JobPost {
+private:
+	std::string title = "";
+public:
+	JobPost(std::string title) 
+        :title(title)
+    {    
+	}
+
+	std::string getTitle() {
+		return title;
+	}
+};
+
+class Observer
 {
-    protected $title;
+public:
+    virtual void onJobPosted(JobPost* job) = 0;
+}；
 
-    public function __construct(string $title)
-    {
-        $this->title = $title;
-    }
-
-    public function getTitle()
-    {
-        return $this->title;
-    }
-}
-
-class JobSeeker implements Observer
+class JobSeeker: public Observer
 {
-    protected $name;
+private:
+	std::string name = "";
+public:
+	JobSeeker(std::string name) 
+		:name(name)
+	{
+	}
 
-    public function __construct(string $name)
-    {
-        $this->name = $name;
-    }
-
-    public function onJobPosted(JobPost $job)
-    {
-        // Do something with the job posting
-        echo 'Hi ' . $this->name . '! New job posted: '. $job->getTitle();
-    }
-}
+	virtual void onJobPosted(JobPost* job) {
+		std::cout << "Hi " << this->name << "! New job posted: "
+		          << job->getTitle() << std::endl;
+	}
+};
 ```
-Then we have our job postings to which the job seekers will subscribe
-```php
-class EmploymentAgency implements Observable
-{
-    protected $observers = [];
 
-    protected function notify(JobPost $jobPosting)
+Then we have our job postings to which the job seekers will subscribe
+
+```c++
+class Observable
+{
+public:
+    virtual void notify(JobPost* jobPosting) = 0;
+    virtual void attach(JobSeeker* observer) = 0;
+};
+
+class EmploymentAgency
+{
+private:
+    std::vector<Observer*> observers;
+public:
+    virtual void notify(JobPost* jobPosting)
     {
-        foreach ($this->observers as $observer) {
-            $observer->onJobPosted($jobPosting);
+        for(auto observer:observers)
+        {
+            observer->onJobPosting(jobPosting);
         }
     }
-
-    public function attach(Observer $observer)
+    
+    virtual void attach(Observer* observer)
     {
-        $this->observers[] = $observer;
+        observers.push_back(observer);
     }
-
-    public function addJob(JobPost $jobPosting)
+    
+    void addJob(JobPost* jobPosting)
     {
-        $this->notify($jobPosting);
+        notify(jobPosting);
     }
-}
+};
+
 ```
+
 Then it can be used as
-```php
+
+```c++
 // Create subscribers
-$johnDoe = new JobSeeker('John Doe');
-$janeDoe = new JobSeeker('Jane Doe');
+auto johnDoe = new JobSeeker('John Doe');
+auto janeDoe = new JobSeeker('Jane Doe');
 
 // Create publisher and attach subscribers
-$jobPostings = new EmploymentAgency();
-$jobPostings->attach($johnDoe);
-$jobPostings->attach($janeDoe);
+auto jobPostings = new EmploymentAgency();
+jobPostings->attach($johnDoe);
+jjobPostings->attach($janeDoe);
 
 // Add a new job and see if subscribers get notified
-$jobPostings->addJob(new JobPost('Software Engineer'));
+jobPostings->addJob(new JobPost('Software Engineer'));
 
 // Output
 // Hi John Doe! New job posted: Software Engineer
