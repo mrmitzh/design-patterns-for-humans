@@ -38,7 +38,7 @@ Wikipedia describes them as
 >
 > I change the PHP-7 implementation to C++ implementation.  If there are any better implementation of these pattern, please inform me!
 >
-> Also for demostrating these pattern, I will ignore the problem of memory leak without deleting the object that I new. 
+> Also for demostrating these pattern, I will ignore the problem of memory leak without deleting the object that I new and ignore that we should write virtual destructor in the base class. Just focus on the idea behind those patterns!
 
 Types of Design Patterns
 -----------------
